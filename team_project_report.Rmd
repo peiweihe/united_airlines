@@ -8,20 +8,20 @@ output:
 # 1 Introduction and research question
 ## 1.1 Introduction of United Airlines Controversy
 
-United Airlines, an American airline company which is the world's third-largest airline when measured by revenue, has passed a tough month. On Sunday, April 9.Their airline officials and airport security dragged a doctor named David Dao off of an overbooked flight. A bunch of passengers has been speaking up about their terrible United experiences, and finally, it became international news. 
+United Airlines, an American airline company which is the world's third-largest airline when measured by revenue, has passed a tough month. On Sunday, April 9.Their airline officials and airport security dragged a doctor named David Dao off of an overbooked flight. A bunch of passengers have been speaking up about their terrible United experiences, and finally. It became international news. 
 
-After things happened, Video of the incident recorded by passengers went viral on social media, resulting in outrage over the violent incident. Politicians expressed concern and called for an official investigation. United Airlines issued its first response to the incident via Twitter.  Apologize for having to re-accommodate customers. The internet went wild over Munoz's use of the word "re-accommodate.�?
+After things happened, Video of the incident recorded by passengers went viral on social media, resulting in outrage over the violent incident. Politicians expressed concern and called for an official investigation. United Airlines issued its first response to the incident via Twitter. Apologize for having to re-accommodate customers. The internet went wild over Munoz's use of the word "re-accommodate.”
 
-Involving this crisis and crisis dealing measures of the company. This report will gather tweets data and mass media news reports about this crisis(including NYTimes, WathingtonPost, BBC news) to show and analyze the general public opinions for this crisis. Based on those analyses, we provide some basic advice for the company to react this crisis better.
+Involving this crisis and crisis dealing measures of the company. This report will gather tweets data and mass media news reports about this crisis(including NYTimes, WathingtonPost, BBC news) to show and analyze the general public opinions for this crisis. Based on those analyses, we provide some basic advice for the company to react this crisis in a better way.
 
 ## 1.2 Research Question
 Based on linear transmission model of messages. We made some research questions for this crisis,it includes
 
->1. What’s information source of this crisis? What people create for message? How they create?
+>1. What’s the information source of this crisis? What people create for message? How they create?
  2. What are differences between transmitters? How they transmit this crisis?
  3. How users encoded this news? How they feel?
  4. What’s the noise in this processing?
- 5. What measures do company take? Does them work?
+ 5. What measures does the company take? Do they work?
  6. All in all, What are advices we can provide for United Airlines.
 
 # 2 Data Gathering 
@@ -34,6 +34,7 @@ library(plyr)
 ```
 
 Search the Twitter by using harshtags related to United Airlines from April 10th to April 18th, and finally got 60000 tweets in total. Here is the tags we use:unitedairlines, dontflyunited, boycottunited, boycottunitedairlines, NewUnitedAirlinesMottos, UnitedAirlinesmemes, UnitedAirlinesAssault.
+
 ```{r, eval=F}
 setup_twitter_oauth(consumer_key, consumer_secret, token, token_secret)
 tweets <- plyr::ldply(searchTwitter("#unitedairlines", n=10000, lang="en"), as.data.frame)
@@ -42,7 +43,8 @@ tweets0417=subset(tweets,language=="en")
 total <- rbind(tweets0412, tweets0417,tweets0418,tweets0418a,tweets0418b,tweets0418c,
                tweets0418d,tweets0418e,tweets0418f)
 ```
-Use the tweets, corpus the tweets text and convert into dfm. Remove stopwords to clean the  Finally we could get a clean dtm.
+
+Use the tweets, corpus the tweets text and convert into dfm. Remove stopwords. Finally we could get a clean dtm.
 
 ```{r eval = F}
 stopwords = c(stopwords("english"),"coa","apps","https","t.co","who","you","this","too","for","via","will","and","has","don't",'one','rt')
@@ -66,6 +68,7 @@ for i in range(20):
 ```
 
 Then using Rvest to scrape the content, title and time of the single page.(Just Show how scrape nytimes articles as limited pages). Finally, We gather 100 news from NewYork Times, 114 news from BBC and 17 news from Washington Mail.
+
 ```{r eval = F}
 nyt_news = as.vector(readLines("list_nyt_urls.txt"))#nyt_news
 text_list_nyt = c();time_nyt = c();title_nyt = c()
@@ -90,17 +93,20 @@ saveRDS(nyt_17_articles,file = "nyt_17_articles.rds")
 # 3 Data Analysis
 
 ## 3.1 Wordcloud Plot
-```{r eval = F}
+```{r message = F,warning= F}
 #Plot a naive wordcloud of United Airlines to have a brief view.
 total = readRDS("totaltweets.rds")
 tweet_dfm = readRDS("tweet_dfm.rds")
+```
+```{r eval = F}
 topfeatures(tweet_dfm, 10)
 textplot_wordcloud(tweet_dfm, max.words = 50, random.color = TRUE, rot.per = .25, colors =sample(colors()[2:128], 5), scale = c(5, .4))
 ```
-
 ## 3.2 Topic Model
 ### 3.2.1 Bulid Topic Model
+
 Build a topic model of tweets by using LDA, automatically assigns topics to text documents. We concluded 5 topics, including crisis, passenger, company, discussion and jokes.
+
 ```{r eval = F}
 ignore = c(stopwords('english'),'*unitedairlines','united*','newunitedairlinesmottos','airlines','made','xcyl6ibncw','boycottunit*','fli*')
 d = dfm(tweet_dfm, remove=ignore, stem=T)
@@ -112,7 +118,7 @@ colnames(topic) = c("crisis", "passenger", "company","discussion","jokes")
 topic
 ```
 ```{r,echo=F}
-knitr::include_graphics(path='/Users/shenanqi/data/USairlines/topics.png')
+knitr::include_graphics(path='/Volumes/Mac\ 1/USairlines/topics.png')
 ```
 
 ### 3.2.2 Topic Heatmap
@@ -124,64 +130,71 @@ diag(cm) = 0
 heatmap(cm, symm = T)
 ```
 ```{r,echo=F}
-knitr::include_graphics(path='/Users/shenanqi/data/USairlines/Rplot02.png')
+knitr::include_graphics(path='/Volumes/Mac\ 1/USairlines/Rplot02.png')
 ```
+
 As the topic model shown, we can see that the most heated discussion is around the company and the crisis, while when people discuss this crisis on Twitter, they are likely to make jokes about United Airlines.
 
 ## 3.3 Sentiment Analysis
 ### 3.3.1 Applying Sentiment Dictionary to DTM
-```{r eval = F}
+
+```{r message = F,warning= F}
 lexicon = readRDS("lexicon.rds")
 #Read lexicon as dictionary to define positive and negative words.
 pos_words = lexicon$word1[lexicon$priorpolarity == "positive"]
 neg_words = lexicon$word1[lexicon$priorpolarity == "negative"]
+```
+```{r eval = F}
 #Read tweets texts, and apply the sentiment dictionary to create matrix of positive and negative words.
 uatext = total$text
 uadtm = create_matrix(uatext,language="english",removePunctuation=T)
+
 total$npos = row_sums(uadtm[, colnames(uadtm) %in% pos_words])
 total$nneg = row_sums(uadtm[, colnames(uadtm) %in% neg_words])
 #Calculate the sentiment scores.
 total$sent = (total$npos - total$nneg) / (total$npos + total$nneg)
 total$sent[is.na(total$sent)] = 0
 #Use quanteda to apply the sentiment dictionary to tweets.
+```
+```{r message = F,warning = F}
 dict = dictionary(list(pos=pos_words, neg=neg_words))
 dfm2 = dfm(paste(total$text), dictionary=dict)
 ```
+
 Convert it to a data.frame and combine it with the tweets, according to the sentiment classification and retweetcount. 
-```{r eval = F}
+
+```{r message = F,warning = F}
 d2 = as.data.frame(dfm2)
 total = cbind(total, d2)
 tweetsent=subset(total,select=c("id","screenName","text","retweetCount","pos","neg","sent"))
 tweetsent$gold = as.factor(ifelse(tweetsent$retweetCount > 1000, "pos", "neg"))
 tweetsent$pred = ifelse(tweetsent$sent > 0, "pos", "neg")
 mt = table(tweetsent$gold, tweetsent$pred)
+mt
 ```
-        neg   pos
-  neg 30236 15868
-  pos  8233  5459
-As the result shown, when the retweetCount is more than 1000, there seems to be more negative words in the text. So we guess more negative contents about United Airlines are more easily to spread on Twitter.
+
+As the result shown, when the retweetCount is more than 1000, there seems to be more negative words in the text. So we guess more negative contents about United Airlines spreaded easily on Twitter.
 
 ### 3.3.2 Validating sentiment
 Compute accuracy, precision, and recall on a dichotomized version of the predictions and manual sentiment.
 Firstly calculate overall prediction accuracy:
-```{r eval = F}
+
+```{r message=FALSE, warning=FALSE}
 sum(diag(mt)) / sum(mt)
 ```
-The accuracy is 0.5969463.
-Then compute precision, recall and FScore per class.
-```{r eval = F}
+```{r message=FALSE, warning=FALSE}
 pr = mt["pos", "pos"] / sum(mt[, "pos"])
 re = mt["pos", "pos"] / sum(mt["pos", ])
 f1 = 2*pr*re/(pr+re)
 print("FScore:")
 c(Precision=pr, Recall=re, FScore=f1)
 ```
-Precision    Recall    FScore 
-0.2559666 0.3987000 0.3117736 
+
 As the FScore is not very high, the coorelation between retweetCount and words sentiment is not very significant. As the result shown, when the retweetCount is more than 1000, there seems to be more negative words in the text, which means more negative contents about United Airlines are more easily to spread on Twitter. To validate sentiment analysis result, as the FScore 0.34 is not very high, the coorelation between retweetCount and words sentiment is not very significant.
 
-## 3.4 Time analysis
+## 3.4 Time analysis(take twitter as example)
 In this part, we analysis the change of keywords in twitter with time axis. It shows how opinion changes with time. As space-limited, we would just show some important codes.
+
 ```{r eval = F}
 total$date = as.Date(total$created)
 total12 = total[total$date=='2017-04-12',];total13 = total[total$date=='2017-04-13',]
@@ -206,11 +219,12 @@ cmp  = arrange(merge(cmp, dates), -termfreq)
 with(head(cmp, 150), plotWords(x = created, words = term, wordfreq = termfreq, random.y = T, scale=1))
 ```
 ```{r,echo=F}
-knitr::include_graphics(path='/Users/shenanqi/data/USairlines/Rplot01.jpg')
+knitr::include_graphics(path='/Volumes/Mac\ 1/USairlines/Rplot03.jpg')
 ```
 We could see as time went on, the focus of opinion was changing. From the beginning, people focus on what's happened to David Dao and what was shown in that videos which recoding the violence. After that, people start to focus what CEO of United Airlines did in this crisis. And they thought themselves(like the word citizens). It cleanly revealed and divided stages of this crisis.
 
 ### 3.5 Network Analysis
+
 ```{r eval = F}
 #use regular expression to find repost(RT or via)
 index = with(totaltweets,grepl("(RT|via)((?:\\b\\W*@\\w+)+)", totaltweets$text))
@@ -224,7 +238,8 @@ reposts = as.data.frame(cbind(who_post,who_repost))#create a dataframe of repost
 reposts$who_post = gsub("@.*", "",reposts$who_post)
 reposts = rename(reposts, c("who_post"="Source", "who_repost"="Target"))
 ```
-Analyze who became KOL in this crisis spreading in Twitter.
+
+Analyze who became KOL in this crisis spreading in Twitter
 
 ```{r eval = F}
 #Find KOL: take users whose retweet count over 100000
@@ -244,20 +259,49 @@ high_repost = data.frame(cbind(KOL,KOLinfo))
 ```
 
 ## 4 conclusion 
-## 4.1 Stages of Crisis Management
-Stage 1, Prodromal, there are some negative impression from 2016, and no crisis management has been conducted.
-Stage 2, Crisis breakout, the crisis breakout on April 9th, and the United Airlines used excuse strategy, to deny and shift the blame to litigant.
-Stage 3, Chronic, litigation occured, and media exposes were aired, and UA took full apology and corrective action.
-Stage 4, Solution, we could metion on below.
-## 4.2 Message Transmission Model
-Information part, news Media coverage is neutral and objective, while Twitter contents are mostly related to boycott United Airlines with strong emotion.
-Transmitter part, news Media uses text, pictures and video, and Twitter uses text, tags, photos(gif),comic and video. There are  Two-step Flow, re-creation and infotainment on Twitter, and there are some interactions between these two media.
-Receiver part, KOL has great influence that high influence
-users have high friends count or high followers count or both.
-Sparse network in Twitter: Not every one can be noticed and have a voice.
-Herd Behavior(noise): Express negative emotion followed the masses.
-## 4.3 Improvement
-1. United Airlines should release news more timely, the video about policemen dragging that doctor was release at 9th April in twitter. However the apologetic letter was released at 10th April, it��s too late. Leave the time for negative opinion spreading.
-2. Public opinions & emotions were arouse after the first apologetic letter realised. It proves that the content of first apologetic letter should be altered. We need to apologize more sincerely rather than ��denying�� it by using words like ��re-accommodation��.
-3. By using some communication strategies like attacking the accusers ( those policemen in airport), drowning the negative information by paying money to opinion leaders. We might get better results.
-4. We can use characteristics we have analyzed to find out opinion leaders.
+According to Fink’s crisis model (1896), we find out this crisis has four stages:
+
+* Prodromal period: We notice there are some negative news of United Airlines in mass media since 2016, but they took no measures to deal with these, regarding as little matters. 
+
+* Crisis breakout: The crisis broke out on April 9th with a video wide spreading, however, United Airlines treated it with excuse: the CEO denied their responsibility and shifted the blame to litigant. 
+
+* Chronic period: this is the stage where litigation occurs, media exposes are aired, internal investigations are launched—some staff were fired to take responsibility, government oversight investigations commence and so on. To notice, we can find unlike other crisis, United Airlines have large exposition and lasted a little long in social media especially on Twitter, proving as another dramatically change in counts and sentiment after 7 days of its breakout. 
+
+* Solution period: this is when things begin to return to normal.As prodromal period is hard to discover and take measures, we may focus on the second and third stages to find out how this crisis spread.  
+```{r,echo=F}
+knitr::include_graphics(path='/Volumes/Mac\ 1/USairlines/result34.png')
+```
+
+Here is the model we find in this crisis (Shannon&Weaver,1948), as we can not get the reader’s behavior of mass media, so we only analyze decoder and receiver in Twitter.        
+
+**Sender**:News Media has various sources of information, some investigated by themselves, some interviewed company, litigant and other United Airlines’ customers. As for New York Times, they even highlighted opinions in twitter, for we see twitter as an important topic in its topic model. This shows an interaction between mass media and social media: what say on social media would motivate news creation in mass media. As for social media like Twitter, mass media is a definitely crucial source, users as self-media also are information provider.
+
+```{r,echo=F}
+knitr::include_graphics(path='/Volumes/Mac\ 1/USairlines/result4.png')
+```
+
+
+**Encoder** As shown in word clouds above, we can find Twitter users sent messages with lots of hash tags with negative emotions. Some just showed their negative emotions, such as disgusting. Some thought it is worst and boycotted it. However, more people coded their tweets as irony, such as “genius”, so in our sentiment analysis, we find it surprisingly that it is positive. And more tweets are, more positive the total sentiment is. 
+
+Mass media shows more objective and neutral attitude. New York Times emphasized the process of this controversy, and talked about racist issues. Washington Mail emphasized the litigants including CEO and David Dao and they paid more attention about human rights issues and company’s issues. BBC just saw this as a foreign news on account of finding “US” and “twitter” as two highlighted words. They also traced back some former faults of United Airlines made in UK. All medium avoided to use those words with Intense feeling. However, they described people are “outrange” and emphasized misdeed of United Airlines.
+
+**Channel** Mass media treated this news with texts, pictures and videos, however, we just be able to analyze text one. There are some special spreading characteristics on Twitter in this crisis. Hundreds of users symbolized this crisis trough spoof videos and comics.
+
+**Decoder** On account of two step flow in Twitter, it is possible to regenerate a crisis or amplify damage on company. As United Airlines we analyzed, we detect two high peaks of crisis communication, the first one is right after the outbreak stage, the second one, however, is 7 days after, due to the two step flow. And there is also more infotainment tendency with time passing by.
+
+**Receiver** Key opinion leaders have great influence. As shown below in the spreading of hot tweets, the average Degree is 1.224. We can see the spreading network is sparse, and some opinion leaders have the power, such as Ascaniospread and LalitKModi. This shows some herd effects in this network, some tweets with less information just negative emotion were reposted widely. This is a noise from receiver self and this may cause neglect and voice losing of some users. And we also find one way to discover this KOL in Twitter: high influence users would have high friends count or high followers count or both. It may help crisis managing when crisis happen.
+
+```{r,echo=F}
+knitr::include_graphics(path='/Volumes/Mac\ 1/USairlines/result5.png')
+```
+**Improvement**
+
+* United Airlines should release news more timely, the video about policemen dragging that doctor was release at 9th April in Twitter. However, the apologetic letter was released at 10th April, it’s too late. Leave the time for negative opinion spreading. 
+
+* The content of first apologetic letter in breakout stage should be altered. They need to apologize more sincerely rather than “denying” it by using words like “re-accommodation”. We recommend a full responsibility taken as the first measures taking that may even gain good comments if dealing successfully with crisis.
+
+* By using some communication strategies like apologize not only the victims in this crisis but also customers who had same situation, United Airlines could reduce the source of information.
+
+* As there are much negative emotion tweets, the company can use drown method, posting much positive information to apologize and show clear attitudes. This may also reduce the source of information for mass media.
+
+* We can use characteristics we have analyzed to find out opinion leaders, especially prevent the second damage, especially infotainment in chronic stage.
