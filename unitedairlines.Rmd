@@ -1,0 +1,173 @@
+---
+title: "Team Project"
+author: "SHEN Anqi 54577992, ZHANG Yijun 54505695, HE Peiwei 54471952"
+output: pdf_document
+---
+# 1 Introduction and research question
+## 1.1 Introduction of United Airlines Controversy
+United Airlines had a bad month. Their airline officials and airport security dragged a doctor named David Dao off of an overbooked flight. A bunch of passengers have been speaking up about their terrible United experiences, and finally it became international news.
+## 1.2 Research Question
+
+
+# 2 Data Collecting
+## 2.1 Twitter Data
+```{r, message=FALSE, warning=FALSE, echo=FALSE}
+library(twitteR)
+library(quanteda)
+library(corpustools)
+library(RColorBrewer)
+library(ggplot2)
+library(igraph)
+library(RTextTools)
+library(slam)
+library(reshape2)
+```
+```{r echo = F, message=FALSE}
+token = '1178611110-Dvkv3jshF3GVEF1hAnOrWavvLPiGhG3gNMHLRQr'
+token_secret = 'm7cWEPVKvOIkb2DRIq7CRU1szsmx2nUF3pTTKcjU4lpHX'
+consumer_key = "zI5qgBVNoUXJdaF9sT30B4RM1"
+consumer_secret = "57C13ROYQnC0OgaWs3i0DUj1CaHUkUosVRQO2zDT8focVq7xVL"
+library(twitteR)
+options(httr_oauth_cache=T)
+setup_twitter_oauth(consumer_key, consumer_secret, token, token_secret)
+```
+Search the Twitter by using harshtags related to United Airlines, and finally got 60000 tweets in total.
+```{r, eval=FALSE}
+tweets <- plyr::ldply(searchTwitter("#unitedairlines", n=10000, lang="en"), as.data.frame)
+tweets0417=subset(tweets,language=="en")
+tweets <- plyr::ldply(searchTwitter("#unitedairlines", n=10000, lang="en"), as.data.frame)
+tweets0418=subset(tweets,language=="en")
+tweets <- plyr::ldply(searchTwitter("#dontflyunited", n=10000, lang="en"), as.data.frame)
+tweets0418a=subset(tweets,language=="en")
+tweets <- plyr::ldply(searchTwitter("#boycottunited", n=10000, lang="en"), as.data.frame)
+tweets0418b=subset(tweets,language=="en")
+tweets <- plyr::ldply(searchTwitter("#boycottunitedairlines", n=5000, lang="en"), as.data.frame)
+tweets0418c=subset(tweets,language=="en")
+tweets <- plyr::ldply(searchTwitter("#NewUnitedAirlinesMottos", n=5000, lang="en"), as.data.frame)
+tweets0418d=subset(tweets,language=="en")
+tweets <- plyr::ldply(searchTwitter("#UnitedAirlinesmemes", n=8000, lang="en"), as.data.frame)
+tweets0418e=subset(tweets,language=="en")
+tweets <- plyr::ldply(searchTwitter("#UnitedAirlinesAssault", n=8000, lang="en"), as.data.frame)
+tweets0418f=subset(tweets,language=="en")
+total <- rbind(tweets0412, tweets0417,tweets0418,tweets0418a,tweets0418b,tweets0418c,tweets0418d,tweets0418e,tweets0418f)
+write.csv(total, file = "totaltweets.csv")
+```
+Use the tweets, corpus the tweets text and convert into dfm. Remove stopwords to clean the dfm.
+```{r}
+stopwords = c(stopwords("english"),"coa","apps","https","t.co","who","you","this","too","for","via","will","and","has","don't",'one','rt')
+tweet_corpus = corpus(total$text)
+tweet_dfm = dfm(tweet_corpus,stemming = T,removePunct=T,removeNumbers=T, removeTwitter=T,minWordLength = 3)
+tweet_dfm = dfm_select(tweet_dfm, stopwords,selection=c("remove"),valuetype=c("fixed"))
+tweet_dfm = dfm_select(tweet_dfm,stopwords("english"),"remove")
+```
+
+# 3 Data Analysis
+## 3.1 Wordcloud Plot
+```{r}
+topfeatures(tweet_dfm, 10)
+```
+Plot a naive wordcloud of United Airlines to have a brief view.
+```{r warning = F, message = F}
+textplot_wordcloud(tweet_dfm, max.words = 50, random.color = TRUE, rot.per = .25, colors =sample(colors()[2:128], 5), scale = c(5, .4))
+```
+
+## 3.2 Topic Model
+### 3.2.1 Bulid Topic Model
+Build a topic model of tweets by using LDA, automatically assigns topics to text documents. We concluded 5 topics, including crisis, passenger, company, discussion and jokes.
+```{r}
+ignore = c(stopwords('english'),'*unitedairlines','united*','newunitedairlinesmottos','airlines','made','xcyl6ibncw','boycottunit*','fli*','dontflyunit','wlzk6jraff','dontflyunit','mimm','fli','can','just','get','ad','dontflyunit','zadbxjru9f','even','oh','hey','cc','uu1k6yqkp7','flight','9gag','1pzezrx8ef','ali_8k','nashat_hj','oxgi08h','t','insid','aekwgwn2x','komikfaktap','oscarmunoz','itzdannno','lalitkmodi','aekwgwn2x','gregpizarrojr','amp')
+d = dfm(tweet_dfm, remove=ignore, stem=T)
+d = convert(d, to="topicmodels")
+set.seed(123)
+m = LDA(d, k = 5, method = "Gibbs", control=list(alpha=.1, iter=100))
+
+topic=data.frame(terms(m, 10))
+colnames(topic) = c("crisis", "passenger", "company","discussion","jokes")
+topic
+write.csv(topic, file = "tweets_topic.csv")
+```
+### 3.2.2 Topic Heatmap
+Plot a heatmap of these 5 topics.
+```{r}
+cm = cor(t(m@beta))
+colnames(cm) = rownames(cm) = colnames(topic)
+diag(cm) = 0
+heatmap(cm, symm = T)
+```
+As the topic model shown, we can see that the most heated discussion is around the company and the crisis, while when people discuss this crisis on Twitter, they are likely to make jokes about United Airlines.
+
+
+## 3.3 Sentiment Analysis
+### 3.3.1 Applying Sentiment Dictionary to DTM
+Read lexicon as dictionary to define positive and negative words.
+```{r}
+lexicon = readRDS("lexicon.rds")
+pos_words = lexicon$word1[lexicon$priorpolarity == "positive"]
+neg_words = lexicon$word1[lexicon$priorpolarity == "negative"]
+```
+Read tweets texts, and apply the sentiment dictionary to create matrix of positive and negative words.
+```{r}
+uatext=total[c("text")]
+uadtm = create_matrix(uatext, language="english",removePunctuation=T, stemWords=F)
+total$npos = row_sums(uadtm[, colnames(uadtm) %in% pos_words])
+total$nneg = row_sums(uadtm[, colnames(uadtm) %in% neg_words])
+```
+Calculate the sentiment scores.
+```{r}
+total$sent = (total$npos - total$nneg) / (total$npos + total$nneg)
+total$sent[is.na(total$sent)] = 0
+```
+Use quanteda to apply the sentiment dictionary to tweets.
+```{r}
+dict = dictionary(list(pos=pos_words, neg=neg_words))
+dfm2 = dfm(paste(total$text), dictionary=dict)
+head(dfm2)
+```
+Convert it to a data.frame and combine it with the tweets, according to the sentiment classification and retweetcount. 
+```{r}
+d2 = as.data.frame(dfm2)
+total = cbind(total, d2)
+tweetsent=subset(total,select=c("id","screenName","text","retweetCount","pos","neg","sent"))
+tweetsent$gold = as.factor(ifelse(tweetsent$retweetCount > 1000, "pos", "neg"))
+tweetsent$pred = ifelse(tweetsent$sent > 0, "pos", "neg")
+mt = table(tweetsent$gold, tweetsent$pred)
+mt
+```
+As the result shown, when the retweetCount is more than 1000, there seems to be more negative words in the text. So we guess more negative contents about United Airlines are more easily to spread on Twitter.
+
+### 3.3.2 Validating sentiment
+Compute accuracy, precision, and recall on a dichotomized version of the predictions and manual sentiment.
+Firstly calculate overall prediction accuracy:
+```{r}
+sum(diag(mt)) / sum(mt)
+```
+Then compute precision, recall and FScore per class. As the FScore is not very high, the coorelation between retweetCount and words sentiment is not very significant.
+```{r}
+pr = mt["pos", "pos"] / sum(mt[, "pos"])
+re = mt["pos", "pos"] / sum(mt["pos", ])
+f1 = 2*pr*re/(pr+re)
+print("FScore:")
+c(Precision=pr, Recall=re, FScore=f1)
+```
+By using the lexicon dictionary, I conduct a sentiment analysis of United Airlines tweets, by testing the correlation between retweetCount and word sentiment. As the result shown, when the retweetCount is more than 5000, there seems to be more negative words in the text, which means more negative contents about United Airlines are more easily to spread on Twitter. To validate sentiment analysis result, as the FScore 0.34 is not very high, the coorelation between retweetCount and words sentiment is not very significant.
+
+
+# 4 Conclusion
+## 4.1 Stages of Crisis Management
+Stage 1, Prodromal, there are some negative impression from 2016, and no crisis management has been conducted.
+Stage 2, Crisis breakout, the crisis breakout on April 9th, and the United Airlines used excuse strategy, to deny and shift the blame to litigant.
+Stage 3, Chronic, litigation occured, and media exposes were aired, and UA took full apology and corrective action.
+Stage 4, Solution, we could metion on below.
+## 4.2 Message Transmission Model
+Information part, news Media coverage is neutral and objective, while Twitter contents are mostly related to boycott United Airlines with strong emotion.
+Transmitter part, news Media uses text, pictures and video, and Twitter uses text, tags, photos(gif),comic and video. There are  Two-step Flow, re-creation and infotainment on Twitter, and there are some interactions between these two media.
+Receiver part, KOL has great influence that high influence
+users have high friends count or high followers count or both.
+Sparse network in Twitter: Not every one can be noticed and have a voice.
+Herd Behavior(noise): Express negative emotion followed the masses.
+
+## 4.3 Improvement
+1. United Airlines should release news more timely, the video about policemen dragging that doctor was release at 9th April in twitter. However the apologetic letter was released at 10th April, it¡¯s too late. Leave the time for negative opinion spreading.
+2. Public opinions & emotions were arouse after the first apologetic letter realised. It proves that the content of first apologetic letter should be altered. We need to apologize more sincerely rather than ¡±denying¡± it by using words like ¡°re-accommodation¡±.
+3. By using some communication strategies like attacking the accusers ( those policemen in airport), drowning the negative information by paying money to opinion leaders. We might get better results.
+4. We can use characteristics we have analyzed to find out opinion leaders.
